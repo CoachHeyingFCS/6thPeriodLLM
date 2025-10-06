@@ -1,0 +1,5 @@
+# pick ONE of these lines:
+FROM llama3.2:3b
+# FROM gemma2:2b
+# FROM gemma3:1b
+# FROM tinyllama:latestSYSTEM
