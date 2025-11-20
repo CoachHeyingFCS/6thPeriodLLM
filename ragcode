@@ -1,0 +1,87 @@
+from langchain_chroma import Chroma
+from langchain_community.document_loaders import PyPDFLoader
+from langchain_community.chat_models import ChatOllama
+from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_core.prompts import PromptTemplate  
+from langchain.chains.combine_documents import create_stuff_documents_chain
+from langchain.chains.retrieval import create_retrieval_chain
+import sys
+
+def loadPDF():
+    # Pull PDF into code
+    loader = PyPDFLoader("/workspaces/6thPeriodLLM/Understanding Modelfile in Ollama.pdf")
+    pages = loader.load_and_split()
+
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size = 700,
+        chunk_overlap = 200,
+        length_function = len,
+        add_start_index = True
+    )
+    chunks = text_splitter.split_documents(pages)
+    print(f"Split {len(pages)} pages into {len(chunks)} chunks")
+
+    embedding = FastEmbedEmbeddings()
+    Chroma.from_documents(documents=chunks, embedding=embedding, persist_directory="./sql_chroma_db")
+
+loadPDF()
+
+from huggingface_hub import login
+access_token_read = ""
+access_token_write = ""
+login(token = access_token_read)
+
+def rag_chain():
+    model = ChatOllama(model= "tinyLLM")
+    prompt = PromptTemplate.from_template(
+        """ 
+        You are an AI assistant. Use ONLY the provided context to answer the question. 
+        If the answer is not clearly and directly supported by the context, respond exactly with:
+        "I don't have enough context to answer that."
+
+        Do NOT make up facts or speculate.
+        "You must base your answer ONLY on the provided context. 
+        If you include any information from the context, you must reference the filename or page it came from. 
+        If there is no relevant context, respond: 'I don't have enough context to answer that.'"
+
+        Context:
+        {context}
+
+        Question:
+        {input}
+
+        Answer:
+        """
+    )
+
+    embedding = FastEmbedEmbeddings()
+    vector_store = Chroma(persist_directory="./sql_chroma_db", embedding_function=embedding)
+
+    retriever = vector_store.as_retriever(
+        search_type="similarity_score_threshold", 
+        search_kwargs={
+            "k":2,
+            "score_threshold": 0.5
+        }
+    )
+
+    document_chain = create_stuff_documents_chain(model, prompt)
+    chain = create_retrieval_chain(retriever, document_chain)
+    return chain
+
+
+
+def ask(query: str):
+    #
+    chain = rag_chain()
+    # invoke chain
+    result = chain.invoke({"input": query})
+    # print results
+    print(result["answer"])
+
+
+user_input = input("What is your question?\n\n")
+while user_input.lower() != 'exit':
+    ask(user_input)
+    user_input = input("What is your question?\n\n")
