@@ -8,7 +8,7 @@ model = ChatOllama(
     model="research-llm"
 )
 
-prompt = ChatPromptTemplate.from_template("""You are a helpful research AI. bUse the following web search result {question}. Web search result: {context}. Write a concise, well-structured response""")
+prompt = ChatPromptTemplate.from_template("""You are a helpful research AI. Use the following web search result: {context}. To write a concise, well-structured response to this question : {question}""")
 
 parser = StrOutputParser()
 
@@ -23,8 +23,8 @@ def generate_response(userText):
     response = chain.invoke({"question": f"Summarize information about {userText}", "context": context})
     return response
 
-userInput = input("You are tracking the villains who stole the princess. You see a bridge. After looking closely, see signs of a troll living under the bridge. In your quest to find the princess, you wonder if he has any information. Trolls are notoriously unfriendly, so you must be careful with your words. What do you say to the troll?\n\n")
-while userInput.lower() != 'walk away':
+userInput = input("Who would you like to learn about today? \n type exit to leave\n\n")
+while userInput.lower() != 'exit':
     aiResponse = generate_response(userInput)
     print(aiResponse + "\n")
-    userInput = input("How do you respond? *You can always walk away*\n")
+    userInput = input("Who else do you want to learn about? *You can always type exit to leave*\n")
