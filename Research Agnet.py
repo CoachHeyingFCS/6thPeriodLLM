@@ -9,7 +9,6 @@ prompt = ChatPromptTemplate.from_template("""You are a helpful research AI. Use 
 parser = StrOutputParser()
 search = DuckDuckGoSearchRun()
 
-
 chain = prompt | model | parser
 
 def generate_response(userText):
@@ -17,11 +16,11 @@ def generate_response(userText):
     response = chain.invoke({"question": f"Summarize information about {userText}", "context": context})
     return response
 
-def write_to_file(information, i):
+def write_to_file(userText, information, i):
     file_name = "output.txt"
     try: 
         with open(file_name, 'a') as file:
-            file.write(str(i)+")\n")
+            file.write(str(i)+") "+ userText + "\n")
             file.write(information)
             file.write("\n")
         print(f"Content sucessfully appended to {file_name}.")
@@ -32,6 +31,6 @@ count = 1
 userInput = input("Write the name of the person you would like to learn about today below: \nType exit to leave\n\n")
 while userInput.lower() != 'exit':
     aiResponse = generate_response(userInput)
-    write_to_file(aiResponse, count)
+    write_to_file(userInput, aiResponse, count)
     userInput = input("Who else do you want to learn about? *You can always type exit to leave*\n")
     count += 1
